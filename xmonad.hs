@@ -17,7 +17,7 @@ import Data.Monoid ((<>))
 
 main = EH.withCustomHelper conf
   where
-    conf = EH.defaultConfig 
+    conf = EH.defaultConfig
         { EH.run = oldMain
         , EH.compile = \_ -> EH.compileUsingShell "cd /home/yrid/xmonadrc/ && cabal build 2> /home/yrid/xmonadrc/build.log"
         , EH.postCompile = postCompile
@@ -40,8 +40,8 @@ oldMain = do
     forkIO $ randomWallpaper
     xmproc <- spawnPipe "xmobar"
 
-    xmonad $ ewmh defaultConfig 
-        { manageHook = manageDocks <+> (className =? "vlc" --> doFullFloat)  <+> (isFullscreen --> doFullFloat) <+> manageHook defaultConfig 
+    xmonad $ ewmh defaultConfig
+        { manageHook = manageDocks <+> (className =? "vlc" --> doFullFloat)  <+> (isFullscreen --> doFullFloat) <+> manageHook defaultConfig
         , layoutHook = avoidStruts $ layoutHook defaultConfig
         , logHook = dynamicLogWithPP xmobarPP
                         { ppOutput = hPutStrLn xmproc
@@ -57,4 +57,4 @@ oldMain = do
             , ((mod4Mask, 0x1008FF13), spawn "amixer set Master 3+")
             , ((0, 0x1008FF12), spawn "amixer -D pulse set Master toggle")
             ]
-            
+
