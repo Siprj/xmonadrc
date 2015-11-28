@@ -1,8 +1,11 @@
 import Control.Concurrent (forkIO, threadDelay, Chan, newChan, writeChan, readChan)
-import Control.Monad (forever)
+import Control.Monad (forever, void)
+import Data.Monoid ((<>))
 import System.Exit
-import System.Posix.Process
 import System.IO
+import System.Posix.Process
+import System.Process
+
 
 import XMonad
 import XMonad.Hooks.DynamicLog
@@ -13,28 +16,54 @@ import XMonad.Util.Run (spawnPipe)
 import XMonad.Util.EZConfig (additionalKeys)
 import XMonad.Wallpaper
 import XMonad.Hooks.EwmhDesktops (ewmh, fullscreenEventHook)
-import Data.Monoid ((<>))
+import XMonad.Wallpaper.Expand (expand)
+
+xmonadSandbox = "$HOME/xmonadrc/"
+wallpaperDirectories = ["$HOME/Dropbox/Wallpapers/"]
+
+-- {{{ Make compile and restart options work in sandbox
 
 main = EH.withCustomHelper conf
   where
     conf = EH.defaultConfig
         { EH.run = oldMain
-        , EH.compile = \_ -> EH.compileUsingShell "cd /home/yrid/xmonadrc/ && cabal build 2> /home/yrid/xmonadrc/build.log"
+        , EH.compile = compileInSandbox
         , EH.postCompile = postCompile
         }
 
-postCompile :: ExitCode -> IO ()
-postCompile ExitSuccess = return ()
-postCompile es@(ExitFailure _) = do
-    errMsg <- readFile "/home/yrid/xmonadrc/build.log"
+compileInSandbox :: Bool -> IO (Either String ())
+compileInSandbox _ = do
+    ep <- expand xmonadSandbox
+    (_, _, errHandler, procHandler) <- createProcess (proc "cabal" ["build"])
+        { cwd = Just ep
+        , std_err = CreatePipe
+        }
+    exitCodeToEather errHandler =<<  waitForProcess procHandler
+exitCodeToEather :: Maybe Handle -> ExitCode -> IO (Either String ())
+exitCodeToEather _ ExitSuccess = return $ Right ()
+exitCodeToEather mh (ExitFailure _) =
+    case mh of
+        Nothing -> return $ Left "ERROR: Can't retrieve error message from build command."
+        Just h  -> Left <$> hGetContents h
+
+postCompile :: Either String () -> IO ()
+postCompile (Right _)= return ()
+postCompile (Left errMsg) = do
     putStrLn errMsg
-    _ <- forkProcess $ executeFile "xmessage" True ["-default", "okay", errMsg] Nothing
-    return ()
+    void . forkProcess $ executeFile "xmessage" True ["-default", "okay", errMsg] Nothing
+
+-- }}} Make compile and restart options work in sandbox
+
+-- {{{ Wallpaper setup
 
 randomWallpaper :: IO ()
 randomWallpaper = forever $ do
-    setRandomWallpaper ["/home/yrid-backup/Dropbox/Wallpapers/"]
+    setRandomWallpaper wallpaperDirectories
     threadDelay 3600000000
+
+-- }}} Wallpaper setup
+
+-- {{{ Keyboard layout switching
 
 newKeyboardHandling :: [String] -> IO (Chan ())
 newKeyboardHandling k = do
@@ -43,12 +72,13 @@ newKeyboardHandling k = do
     return c
 
 rotateKeyboardLayouts :: [String] -> [String]
+rotateKeyboardLayouts [] = []
+rotateKeyboardLayouts (x:[]) = [x]
 rotateKeyboardLayouts (x:xs) = reverse $ x:(reverse xs)
-rotateKeyboardLayouts (x:[]) = x:[]
 
 safeHead :: a -> [a] -> a
 safeHead d (x:_) = x
-safeHead d _     = d
+safeHead d _ = d
 
 keyboardLoop :: [String] -> Chan () -> IO ()
 keyboardLoop k c = do
@@ -60,10 +90,12 @@ switchKeyboardLayout :: Chan () -> IO ()
 switchKeyboardLayout c =
     writeChan c ()
 
+-- }}} Keyboard layout switching
+
 oldMain = do
     forkIO $ randomWallpaper
     kbl <- newKeyboardHandling ["cz", "us"]
-    xmproc <- spawnPipe "xmobar"
+    xmproc <- spawnPipe "xmobar ~/xmonadrc/xmobarrc.hs"
 
     xmonad $ ewmh defaultConfig
         { manageHook = manageDocks <+> (className =? "vlc" --> doFullFloat)  <+> (isFullscreen --> doFullFloat) <+> manageHook defaultConfig
