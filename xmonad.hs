@@ -1,4 +1,4 @@
-import Control.Concurrent (forkIO, threadDelay)
+import Control.Concurrent (forkIO, threadDelay, Chan, newChan, writeChan, readChan)
 import Control.Monad (forever)
 import System.Exit
 import System.Posix.Process
@@ -36,8 +36,33 @@ randomWallpaper = forever $ do
     setRandomWallpaper ["/home/yrid-backup/Dropbox/Wallpapers/"]
     threadDelay 3600000000
 
+newKeyboardHandling :: [String] -> IO (Chan ())
+newKeyboardHandling k = do
+    c <- newChan
+    forkIO $ keyboardLoop k c
+    return c
+
+rotateKeyboardLayouts :: [String] -> [String]
+rotateKeyboardLayouts (x:xs) = reverse $ x:(reverse xs)
+rotateKeyboardLayouts (x:[]) = x:[]
+
+safeHead :: a -> [a] -> a
+safeHead d (x:_) = x
+safeHead d _     = d
+
+keyboardLoop :: [String] -> Chan () -> IO ()
+keyboardLoop k c = do
+    readChan c
+    spawn $ "setxkbmap " <> safeHead "us" k
+    keyboardLoop (rotateKeyboardLayouts k) c
+
+switchKeyboardLayout :: Chan () -> IO ()
+switchKeyboardLayout c =
+    writeChan c ()
+
 oldMain = do
     forkIO $ randomWallpaper
+    kbl <- newKeyboardHandling ["cz", "us"]
     xmproc <- spawnPipe "xmobar"
 
     xmonad $ ewmh defaultConfig
@@ -56,5 +81,5 @@ oldMain = do
             , ((mod4Mask, 0x1008FF11), spawn "amixer set Master 3-")
             , ((mod4Mask, 0x1008FF13), spawn "amixer set Master 3+")
             , ((0, 0x1008FF12), spawn "amixer -D pulse set Master toggle")
+            , ((mod1Mask, xK_Shift_L), liftIO $ switchKeyboardLayout kbl)
             ]
-
