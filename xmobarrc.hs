@@ -14,10 +14,11 @@ Config
         , Run Swap [] 10
         , Run Com "uname" ["-s","-r"] "" 36000
         , Run Date "%a %b %_d %Y %H:%M:%S" "date" 10
+        , Run Volume "default" "Master" [] 10
         , Run StdinReader
         , Run Kbd [("cz", "cz"), ("us", "us")]
         ]
     , sepChar = "%"
     , alignSep = "}{"
-    , template = "%StdinReader% | %cpu% | %memory% * %swap% | %enp4s0% - %wlp7s0% }{%kbd% <fc=#ee9a00>%date%</fc> | %uname% "
+    , template = "%StdinReader% | %default:Master% | %cpu% | %memory% * %swap% | %enp4s0% - %wlp7s0% }{%kbd% <fc=#ee9a00>%date%</fc> | %uname% "
     }
