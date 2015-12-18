@@ -6,12 +6,15 @@ import System.IO
 import System.Posix.Process
 import System.Process
 
-
 import XMonad
 import XMonad.Hooks.DynamicLog
 import XMonad.Hooks.ManageDocks
 import XMonad.Hooks.ManageHelpers
 import qualified XMonad.Util.EntryHelper as EH
+import Graphics.X11.ExtraTypes.XF86
+    ( xF86XK_AudioRaiseVolume
+    , xF86XK_AudioLowerVolume
+    )
 import XMonad.Util.Run (spawnPipe)
 import XMonad.Util.EZConfig (additionalKeys)
 import XMonad.Wallpaper
@@ -19,6 +22,7 @@ import XMonad.Hooks.EwmhDesktops (ewmh, fullscreenEventHook)
 import XMonad.Wallpaper.Expand (expand)
 
 xmonadSandbox = "$HOME/xmonadrc/"
+xmonadBinDir = "$HOME/bin/"
 wallpaperDirectories = ["$HOME/Dropbox/Wallpapers/"]
 
 -- {{{ Make compile and restart options work in sandbox
@@ -34,10 +38,12 @@ main = EH.withCustomHelper conf
 compileInSandbox :: Bool -> IO (Either String ())
 compileInSandbox _ = do
     ep <- expand xmonadSandbox
-    (_, _, errHandler, procHandler) <- createProcess (proc "cabal" ["build"])
-        { cwd = Just ep
-        , std_err = CreatePipe
-        }
+    xb <- expand xmonadBinDir
+    (_, _, errHandler, procHandler) <- createProcess
+        (proc "cabal" ["install", "--symlink-bindir", xb])
+            { cwd = Just ep
+            , std_err = CreatePipe
+            }
     exitCodeToEather errHandler =<<  waitForProcess procHandler
 exitCodeToEather :: Maybe Handle -> ExitCode -> IO (Either String ())
 exitCodeToEather _ ExitSuccess = return $ Right ()
@@ -107,9 +113,9 @@ oldMain = do
         , handleEventHook = fullscreenEventHook
         , modMask = mod4Mask
         } `additionalKeys`
-            [ --((mod4Mask .|. shiftMask, xK_z), spawn "xscreensaver-command -lock")
-              ((0, 0x1008FF11), spawn $ "amixer set Master 1-")
-            , ((0, 0x1008FF13), spawn "amixer set Master 1+")
+            [ ((mod1Mask, xK_z), spawn "slock")
+            , ((0, xF86XK_AudioLowerVolume), spawn $ "amixer -c 1 set Master 1-")
+            , ((0, xF86XK_AudioRaiseVolume), spawn "amixer -c 1 set Master 1+")
             , ((mod4Mask, 0x1008FF11), spawn "amixer set Master 3-")
             , ((mod4Mask, 0x1008FF13), spawn "amixer set Master 3+")
             , ((0, 0x1008FF12), spawn "amixer -D pulse set Master toggle")
