@@ -23,6 +23,7 @@ import XMonad.Wallpaper.Expand (expand)
 
 xmonadSandbox = "$HOME/xmonadrc/"
 xmonadBinDir = "$HOME/bin/"
+userHome = "$HOME"
 wallpaperDirectories = ["$HOME/Dropbox/Wallpapers/"]
 
 -- {{{ Make compile and restart options work in sandbox
@@ -99,6 +100,7 @@ switchKeyboardLayout c =
 -- }}} Keyboard layout switching
 
 oldMain = do
+    userHome' <- expand userHome
     forkIO $ randomWallpaper
     kbl <- newKeyboardHandling ["cz", "us"]
     xmproc <- spawnPipe "xmobar ~/xmonadrc/xmobarrc.hs"
@@ -113,7 +115,10 @@ oldMain = do
         , handleEventHook = fullscreenEventHook
         , modMask = mod4Mask
         } `additionalKeys`
-            [ ((mod1Mask, xK_z), spawn "slock")
+            [ ((mod1Mask, xK_l), spawn "slock")
+            , ((0, xK_Print), spawn $ "scrot " <> userHome'
+                <> "/ScreenShots/screen_%Y-%m-%d-%H-%M-%S.png -d 1 -u"
+              )
             , ((0, xF86XK_AudioLowerVolume), spawn $ "amixer -c 1 set Master 1-")
             , ((0, xF86XK_AudioRaiseVolume), spawn "amixer -c 1 set Master 1+")
             , ((mod4Mask, 0x1008FF11), spawn "amixer set Master 3-")
