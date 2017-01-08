@@ -1,24 +1,32 @@
-import Control.Concurrent (forkIO, threadDelay, Chan, newChan, writeChan, readChan)
+import Control.Concurrent (forkOS, threadDelay, Chan, newChan, writeChan, readChan)
 import Control.Monad (forever, void)
+import qualified Data.Map as M
+import Data.Char (toLower)
+import Data.IORef
+import Data.List (isInfixOf)
 import Data.Monoid ((<>))
 import System.Exit
 import System.IO
 import System.Posix.Process
 import System.Process
 
-import XMonad
-import XMonad.Hooks.DynamicLog
-import XMonad.Hooks.ManageDocks
-import XMonad.Hooks.ManageHelpers
-import qualified XMonad.Util.EntryHelper as EH
 import Graphics.X11.ExtraTypes.XF86
     ( xF86XK_AudioRaiseVolume
     , xF86XK_AudioLowerVolume
     )
-import XMonad.Util.Run (spawnPipe)
-import XMonad.Util.EZConfig (additionalKeys)
-import XMonad.Wallpaper
+import XMonad
+import XMonad.Actions.PhysicalScreens
+import XMonad.Actions.SpawnOn
+import XMonad.Hooks.DynamicLog
+import XMonad.Hooks.UrgencyHook
+import XMonad.Hooks.ManageDocks
+import XMonad.Hooks.ManageHelpers
 import XMonad.Hooks.EwmhDesktops (ewmh, fullscreenEventHook)
+import qualified XMonad.Util.EntryHelper as EH
+import XMonad.Util.EZConfig (additionalKeys)
+import XMonad.Util.Run (spawnPipe)
+import XMonad.Util.Types (Direction2D(U))
+import XMonad.Wallpaper
 import XMonad.Wallpaper.Expand (expand)
 
 xmonadSandbox = "$HOME/xmonadrc/"
@@ -26,57 +34,21 @@ xmonadBinDir = "$HOME/bin/"
 userHome = "$HOME"
 wallpaperDirectories = ["$HOME/Dropbox/Wallpapers/"]
 
--- {{{ Make compile and restart options work in sandbox
-
-main = EH.withCustomHelper conf
-  where
-    conf = EH.defaultConfig
-        { EH.run = oldMain
-        , EH.compile = compileInSandbox
-        , EH.postCompile = postCompile
-        }
-
-compileInSandbox :: Bool -> IO (Either String ())
-compileInSandbox _ = do
-    ep <- expand xmonadSandbox
-    xb <- expand xmonadBinDir
-    (_, _, errHandler, procHandler) <- createProcess
-        (proc "cabal" ["install", "--symlink-bindir", xb])
-            { cwd = Just ep
-            , std_err = CreatePipe
-            }
-    exitCodeToEather errHandler =<<  waitForProcess procHandler
-exitCodeToEather :: Maybe Handle -> ExitCode -> IO (Either String ())
-exitCodeToEather _ ExitSuccess = return $ Right ()
-exitCodeToEather mh (ExitFailure _) =
-    case mh of
-        Nothing -> return $ Left "ERROR: Can't retrieve error message from build command."
-        Just h  -> Left <$> hGetContents h
-
-postCompile :: Either String () -> IO ()
-postCompile (Right _)= return ()
-postCompile (Left errMsg) = do
-    putStrLn errMsg
-    void . forkProcess $ executeFile "xmessage" True ["-default", "okay", errMsg] Nothing
-
--- }}} Make compile and restart options work in sandbox
-
 -- {{{ Wallpaper setup
 
 randomWallpaper :: IO ()
-randomWallpaper = forever $ do
+randomWallpaper = do
     setRandomWallpaper wallpaperDirectories
-    threadDelay 3600000000
+    forever $ do
+        setRandomWallpaper wallpaperDirectories
+        threadDelay 3600000000
 
 -- }}} Wallpaper setup
 
 -- {{{ Keyboard layout switching
 
-newKeyboardHandling :: [String] -> IO (Chan ())
-newKeyboardHandling k = do
-    c <- newChan
-    forkIO $ keyboardLoop k c
-    return c
+newKeyboardHandling :: [String] -> IO (IORef [String])
+newKeyboardHandling k = newIORef k
 
 rotateKeyboardLayouts :: [String] -> [String]
 rotateKeyboardLayouts [] = []
@@ -87,33 +59,32 @@ safeHead :: a -> [a] -> a
 safeHead d (x:_) = x
 safeHead d _ = d
 
-keyboardLoop :: [String] -> Chan () -> IO ()
-keyboardLoop k c = do
-    readChan c
+keyboardLoop :: IORef [String] -> IO ()
+keyboardLoop c = do
+    k <- readIORef c
     spawn $ "setxkbmap " <> safeHead "us" k
-    keyboardLoop (rotateKeyboardLayouts k) c
+    writeIORef c $ rotateKeyboardLayouts k
 
-switchKeyboardLayout :: Chan () -> IO ()
-switchKeyboardLayout c =
-    writeChan c ()
+switchKeyboardLayout :: IORef [String] -> IO ()
+switchKeyboardLayout c = do
+    keyboardLoop c
 
 -- }}} Keyboard layout switching
 
-oldMain = do
-    userHome' <- expand userHome
-    forkIO $ randomWallpaper
+main = do
     kbl <- newKeyboardHandling ["cz", "us"]
-    xmproc <- spawnPipe "xmobar ~/xmonadrc/xmobarrc.hs"
-
-    xmonad $ ewmh defaultConfig
-        { manageHook = manageDocks <+> (className =? "vlc" --> doFullFloat)  <+> (isFullscreen --> doFullFloat) <+> manageHook defaultConfig
-        , layoutHook = avoidStruts $ layoutHook defaultConfig
-        , logHook = dynamicLogWithPP xmobarPP
-                        { ppOutput = hPutStrLn xmproc
-                        , ppTitle = xmobarColor "green" "" . shorten 50
-                        }
-        , handleEventHook = fullscreenEventHook
+    userHome' <- expand userHome
+    setRandomWallpaper wallpaperDirectories
+    forkOS $ randomWallpaper
+    cfg <- statusBar xmobarCmd xmobarPP' hidStatusBarShortcut . withUrgencyHook NoUrgencyHook $ ewmh def
+        { manageHook = manageDocks <> (className =? "vlc" --> doFullFloat)  <> (isFullscreen --> doFullFloat) <> manageHook def <> manageSpawn
+        , layoutHook = avoidStrutsOn [U] $ layoutHook def
+        , handleEventHook = fullscreenEventHook <> docksEventHook
         , modMask = mod4Mask
+        , startupHook = do
+            spawnOn "1" "xterm"
+            spawnOn "3" "firefox"
+            spawnOn "8" "quassel"
         } `additionalKeys`
             [ ((mod1Mask, xK_l), spawn "slock")
             , ((0, xK_Print), spawn $ "scrot " <> userHome'
@@ -126,3 +97,11 @@ oldMain = do
             , ((0, 0x1008FF12), spawn "amixer -D pulse set Master toggle")
             , ((mod1Mask, xK_Shift_L), liftIO $ switchKeyboardLayout kbl)
             ]
+    xmonad cfg
+  where
+    xmobarPP' = xmobarPP
+        { ppTitle = xmobarColor "green" "" . shorten 50
+        , ppUrgent = xmobarColor "red" ""
+        }
+    xmobarCmd = "xmobar ~/xmonadrc/xmobarrc.hs"
+    hidStatusBarShortcut XConfig {XMonad.modMask = modMask} = (modMask, xK_b)
