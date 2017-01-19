@@ -74,7 +74,6 @@ switchKeyboardLayout c = do
 main = do
     kbl <- newKeyboardHandling ["cz", "us"]
     userHome' <- expand userHome
-    setRandomWallpaper wallpaperDirectories
     forkOS $ randomWallpaper
     cfg <- statusBar xmobarCmd xmobarPP' hidStatusBarShortcut . withUrgencyHook NoUrgencyHook $ ewmh def
         { manageHook = manageDocks <> (className =? "vlc" --> doFullFloat)  <> (isFullscreen --> doFullFloat) <> manageHook def <> manageSpawn
