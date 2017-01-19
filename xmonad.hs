@@ -79,7 +79,6 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) = M.fromList $
 
 main = do
     kbl <- newKeyboardHandling ["cz", "us"]
---    setRandomWallpaper wallpaperDirectories
     forkOS $ randomWallpaper
     cfg <- statusBar xmobarCmd xmobarPP' hidStatusBarShortcut . withUrgencyHook NoUrgencyHook $ ewmh def
         { manageHook = manageDocks <> (className =? "vlc" --> doFullFloat)  <> (isFullscreen --> doFullFloat) <> manageHook def <> manageSpawn
