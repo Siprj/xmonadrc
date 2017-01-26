@@ -81,9 +81,10 @@ main = do
         , handleEventHook = fullscreenEventHook <> docksEventHook
         , modMask = mod4Mask
         , startupHook = do
-            spawnOn "1" "xterm"
+            spawnOn "1" "konsole"
             spawnOn "3" "firefox"
             spawnOn "8" "quassel"
+        , terminal = "konsole"
         } `additionalKeys`
             [ ((mod1Mask, xK_l), spawn "slock")
             , ((0, xK_Print), spawn $ "scrot " <> userHome'
