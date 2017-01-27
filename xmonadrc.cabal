@@ -63,6 +63,7 @@ executable xmonad
     , xmonad
     , xmonad-contrib
     , xmonad-wallpaper
+    , containers
     , X11
 
   -- Directories containing source files.

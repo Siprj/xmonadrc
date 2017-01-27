@@ -18,9 +18,10 @@ import XMonad
 import XMonad.Actions.PhysicalScreens
 import XMonad.Actions.SpawnOn
 import XMonad.Hooks.DynamicLog
-import XMonad.Hooks.UrgencyHook
+import XMonad.Hooks.EwmhDesktops
 import XMonad.Hooks.ManageDocks
 import XMonad.Hooks.ManageHelpers
+import XMonad.Hooks.UrgencyHook
 import Graphics.X11.ExtraTypes.XF86
     ( xF86XK_AudioRaiseVolume
     , xF86XK_AudioLowerVolume
