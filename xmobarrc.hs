@@ -27,5 +27,5 @@ Config
         ]
     , sepChar = "%"
     , alignSep = "}{"
-    , template = "%StdinReader% | %default:Master% | %battery% | %cpu% | %memory% * %swap% | %enp4s0% - %wlp7s0% }{%kbd% <fc=#ee9a00>%date%</fc> | %uname% "
+    , template = "%StdinReader% | %default:Master% | %battery% | %cpu% | %memory% | %enp0s25% - %wlp1s0% }{%kbd% <fc=#ee9a00>%date%</fc> | %uname% "
     }

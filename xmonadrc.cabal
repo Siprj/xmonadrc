@@ -57,15 +57,13 @@ executable xmonad
 
   -- Other library packages from which modules are imported.
   build-depends:
-      base >=4.9 && <5.0
+      base >=4.7 && <5.0
     , process
     , unix
-    , xmonad ==0.12.*
-    , xmonad-entryhelper
+    , xmonad
     , xmonad-contrib
     , xmonad-wallpaper
     , X11
-    , containers
 
   -- Directories containing source files.
   --hs-source-dirs:      src

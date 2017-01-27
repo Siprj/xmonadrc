@@ -21,10 +21,13 @@ import XMonad.Hooks.DynamicLog
 import XMonad.Hooks.UrgencyHook
 import XMonad.Hooks.ManageDocks
 import XMonad.Hooks.ManageHelpers
-import XMonad.Hooks.EwmhDesktops (ewmh, fullscreenEventHook)
-import qualified XMonad.Util.EntryHelper as EH
+import Graphics.X11.ExtraTypes.XF86
+    ( xF86XK_AudioRaiseVolume
+    , xF86XK_AudioLowerVolume
+    , xF86XK_MonBrightnessDown
+    , xF86XK_MonBrightnessUp
+    )
 import XMonad.Util.EZConfig (additionalKeys)
-import XMonad.Util.Run (spawnPipe)
 import XMonad.Util.Types (Direction2D(U))
 import XMonad.Wallpaper
 import XMonad.Wallpaper.Expand (expand)
@@ -90,8 +93,10 @@ main = do
             , ((0, xK_Print), spawn $ "scrot " <> userHome'
                 <> "/ScreenShots/screen_%Y-%m-%d-%H-%M-%S.png -d 1 -u"
               )
-            , ((0, xF86XK_AudioLowerVolume), spawn $ "amixer -c 1 set Master 1-")
-            , ((0, xF86XK_AudioRaiseVolume), spawn "amixer -c 1 set Master 1+")
+            , ((0, xF86XK_AudioLowerVolume), spawn "amixer -D default set Master 5%-")
+            , ((0, xF86XK_AudioRaiseVolume), spawn "amixer  -D default set Master 5%+")
+            , ((0, xF86XK_MonBrightnessDown), spawn "xbacklight -10")
+            , ((0, xF86XK_MonBrightnessUp), spawn "xbacklight +10")
             , ((mod4Mask, 0x1008FF11), spawn "amixer set Master 3-")
             , ((mod4Mask, 0x1008FF13), spawn "amixer set Master 3+")
             , ((0, 0x1008FF12), spawn "amixer -D pulse set Master toggle")
