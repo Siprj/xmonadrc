@@ -98,8 +98,8 @@ main = do
             , ((0, xF86XK_AudioRaiseVolume), spawn "amixer  -D default set Master 5%+")
             , ((0, xF86XK_MonBrightnessDown), spawn "xbacklight -10")
             , ((0, xF86XK_MonBrightnessUp), spawn "xbacklight +10")
-            , ((mod4Mask, 0x1008FF11), spawn "amixer set Master 3-")
-            , ((mod4Mask, 0x1008FF13), spawn "amixer set Master 3+")
+            , ((mod4Mask, 0x1008FF11), spawn "amixer -D default set Master 1%-")
+            , ((mod4Mask, 0x1008FF13), spawn "amixer -D default set Master 1%+")
             , ((0, 0x1008FF12), spawn "amixer -D pulse set Master toggle")
             , ((mod1Mask, xK_Shift_L), liftIO $ switchKeyboardLayout kbl)
             ]
