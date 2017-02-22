@@ -87,7 +87,7 @@ main = do
         , startupHook = do
             spawnOn "1" "konsole"
             spawnOn "3" "firefox"
-            spawnOn "8" "quassel"
+            spawnOn "8" "quasselclient"
         , terminal = "konsole"
         } `additionalKeys`
             [ ((mod1Mask, xK_l), spawn "slock")
