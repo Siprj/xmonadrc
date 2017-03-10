@@ -22,6 +22,7 @@ import XMonad.Hooks.EwmhDesktops
 import XMonad.Hooks.ManageDocks
 import XMonad.Hooks.ManageHelpers
 import XMonad.Hooks.UrgencyHook
+import XMonad.Hooks.SetWMName
 import Graphics.X11.ExtraTypes.XF86
     ( xF86XK_AudioRaiseVolume
     , xF86XK_AudioLowerVolume
@@ -88,6 +89,7 @@ main = do
             spawnOn "1" "konsole"
             spawnOn "3" "firefox"
             spawnOn "8" "quasselclient"
+            setWMName "LG3D"
         , terminal = "konsole"
         } `additionalKeys`
             [ ((mod1Mask, xK_l), spawn "slock")
