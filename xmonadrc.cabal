@@ -48,6 +48,10 @@ cabal-version:       >=1.10
 executable xmonad
   -- .hs or .lhs file containing the Main module.
   main-is:             xmonad.hs
+  hs-source-dirs:      src
+
+  other-modules:
+    Expand
 
   -- Modules included in this executable, other than Main.
   -- other-modules:
@@ -62,9 +66,10 @@ executable xmonad
     , unix
     , xmonad
     , xmonad-contrib
-    , xmonad-wallpaper
     , containers
     , X11
+    , time
+    , mtl
 
   -- Directories containing source files.
   --hs-source-dirs:      src
