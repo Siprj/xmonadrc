@@ -68,7 +68,7 @@ switchKeyboardLayout c = do
 handleWallpaper :: FilePath -> MVar UTCTime -> X ()
 handleWallpaper wallpaperDirectory' mvar = do
     tmp <- liftIO $ tryTakeMVar mvar
-    maybe storeTime go tmp
+    maybe (storeTime >> setWapppaper) go tmp
   where
     storeTime = liftIO $ getCurrentTime >>=
         (putMVar mvar . addUTCTime timeDiff)
