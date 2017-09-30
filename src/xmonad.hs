@@ -82,7 +82,7 @@ handleWallpaper wallpaperDirectory' mvar = do
         . WallpaperList $ fmap (\w -> (w, WallpaperDir "")) $ workspaces def
 
 main = do
-    kbl <- newKeyboardHandling ["cz", "us"]
+    kbl <- newKeyboardHandling ["cz qwerty", "us"]
     timeMVar <- newEmptyMVar
     userHome' <- expand userHome
     wallpaperDirectory' <- expand wallpaperDirectory
