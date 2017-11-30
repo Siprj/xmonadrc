@@ -4,7 +4,7 @@ Config
     , border = TopB
     , bgColor = "black"
     , fgColor = "grey"
-    , position = TopW L 100
+    , position = TopW L 95
     , allDesktops = True
     , commands =
         [ Run DynNetwork
