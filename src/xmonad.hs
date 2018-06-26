@@ -21,6 +21,7 @@ import Graphics.X11.ExtraTypes.XF86
 import XMonad
 import XMonad.Actions.PhysicalScreens
 import XMonad.Actions.SpawnOn
+import XMonad.Layout.NoBorders
 import XMonad.Hooks.DynamicLog
 import XMonad.Hooks.EwmhDesktops
 import XMonad.Hooks.ManageDocks
@@ -88,10 +89,12 @@ main = do
     wallpaperDirectory' <- expand wallpaperDirectory
     cfg <- statusBar xmobarCmd xmobarPP' hidStatusBarShortcut
         . withUrgencyHook NoUrgencyHook $ ewmh def
-            { manageHook = manageDocks <> (className =? "vlc" --> doFullFloat)
-                <> (isFullscreen --> doFullFloat) <> manageHook def
+            { manageHook = manageDocks
+                <> (isFullscreen --> doFullFloat)
+                <> (className =? "vlc" --> doFullFloat)
+                <> manageHook def
                 <> manageSpawn
-            , layoutHook = avoidStrutsOn [U] $ layoutHook def
+            , layoutHook = smartBorders . avoidStrutsOn [U] $ layoutHook def
             , handleEventHook = fullscreenEventHook <> docksEventHook
             , modMask = mod4Mask
             , logHook = handleWallpaper wallpaperDirectory' timeMVar
