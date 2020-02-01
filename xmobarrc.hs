@@ -24,7 +24,7 @@ Config
         , Run Volume "default" "Master" [] 10
         , Run StdinReader
         , Run Kbd [("cz", "cz"), ("us", "us")]
-        , Run BatteryP ["BAT1"]
+        , Run BatteryP ["BAT0"]
             ["-t", "<watts> (<left>%)"
             , "-L", "10", "-H", "80", "-p", "3"
             , "--", "-O", "<fc=green>On</fc> - ", "-i", ""
