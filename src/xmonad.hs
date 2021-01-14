@@ -42,7 +42,7 @@ import Expand (expand)
 
 
 userHome = "$HOME"
-wallpaperDirectory = "${HOME}/Dropbox/Wallpapers/"
+wallpaperDirectory = "${HOME}/Dropbox (Maestral)/Wallpapers/"
 
 newKeyboardHandling :: [String] -> IO (IORef [String])
 newKeyboardHandling k = newIORef k
@@ -124,6 +124,8 @@ main = do
                   )
                 , ((0, 0x1008FF12), spawn "amixer -D pulse set Master toggle")
                 , ((mod1Mask, xK_Shift_L), liftIO $ switchKeyboardLayout kbl)
+                , ((mod4Mask, xK_p), spawn "rofi -no-lazy-grab -show drun -modi drun")
+                , ((mod4Mask .|. shiftMask, xK_p), spawn $ userHome' <> "/install/powermenu.sh")
                 ]
     xmonad cfg
   where
