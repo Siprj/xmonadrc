@@ -42,7 +42,7 @@ import Expand (expand)
 
 
 userHome = "$HOME"
-wallpaperDirectory = "${HOME}/Dropbox (Maestral)/Wallpapers/"
+wallpaperDirectory = "${HOME}/Dropbox/Wallpapers/"
 
 newKeyboardHandling :: [String] -> IO (IORef [String])
 newKeyboardHandling k = newIORef k
