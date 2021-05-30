@@ -1,5 +1,6 @@
 module Main where
 
+import Codec.Binary.UTF8.String (decodeString)
 import Control.Concurrent (forkOS, threadDelay, Chan, newChan, writeChan, readChan)
 import Control.Concurrent.MVar
 import Control.Monad (forever, void)
@@ -9,6 +10,8 @@ import Data.List (isInfixOf)
 import qualified Data.Map as M
 import Data.Monoid ((<>))
 import Data.Time.Clock
+import qualified DBus as D
+import qualified DBus.Client as D
 import System.Exit
 import System.IO
 import System.Posix.Process
@@ -82,26 +85,70 @@ handleWallpaper wallpaperDirectory' mvar = do
     setWapppaper = wallpaperSetter $ WallpaperConf wallpaperDirectory'
         . WallpaperList $ fmap (\w -> (w, WallpaperDir "")) $ workspaces def
 
+-- This part is copied from
+-- https://github.com/gvolpe/nix-config/blob/master/home/programs/xmonad/config.hs
+mkDbusClient :: IO D.Client
+mkDbusClient = do
+    dbus <- D.connectSession
+    D.requestName dbus (D.busName_ "org.xmonad.log")
+        [D.nameAllowReplacement, D.nameReplaceExisting, D.nameDoNotQueue]
+    return dbus
+
+-- Emit a DBus signal on log updates
+dbusOutput :: D.Client -> String -> IO ()
+dbusOutput dbus str =
+  let opath  = D.objectPath_ "/org/xmonad/Log"
+      iname  = D.interfaceName_ "org.xmonad.Log"
+      mname  = D.memberName_ "Update"
+      signal = D.signal opath iname mname
+      body   = [D.toVariant $ decodeString str]
+  in  D.emit dbus $ signal { D.signalBody = body }
+
+polybarHook :: D.Client -> PP
+polybarHook dbus =
+  let wrapper c s | s /= "NSP" = wrap ("%{F" <> c <> "} ") " %{F-}" s
+                  | otherwise  = mempty
+      blue = "#2E9AFE"
+      gray = "#7F7F7F"
+      orange = "#ea4300"
+      purple = "#9058c7"
+      yellow = "#FFFF00"
+      red = "#722222"
+      green = "#00FF00"
+      white = "#FFFFFF"
+  in  def { ppOutput          = dbusOutput dbus
+          , ppCurrent         = wrapper yellow . wrap "[" "]"
+          , ppVisible         = wrapper white . wrap "(" ")"
+          , ppUrgent          = wrapper orange
+--          , ppHidden          = wrapper gray
+--          , ppHiddenNoWindows = wrapper red
+          , ppTitle           = wrapper green . shorten 90
+          }
+
 main = do
     kbl <- newKeyboardHandling ["cz qwerty", "us"]
     timeMVar <- newEmptyMVar
     userHome' <- expand userHome
     wallpaperDirectory' <- expand wallpaperDirectory
-    cfg <- statusBar xmobarCmd xmobarPP' hidStatusBarShortcut
-        . withUrgencyHook NoUrgencyHook $ ewmh def
+    dbus <- mkDbusClient
+    xmonad . docks . withUrgencyHook NoUrgencyHook $ ewmh def
             { manageHook = manageDocks
                 <> (isFullscreen --> doFullFloat)
                 <> (className =? "vlc" --> doFullFloat)
                 <> manageHook def
                 <> manageSpawn
             , layoutHook = smartBorders . avoidStrutsOn [U] $ layoutHook def
-            , handleEventHook = fullscreenEventHook <> docksEventHook
+            , handleEventHook = ewmhDesktopsEventHook
+                <> docksEventHook
+                <> fullscreenEventHook
             , modMask = mod4Mask
-            , logHook = handleWallpaper wallpaperDirectory' timeMVar
+            , logHook = dynamicLogWithPP (polybarHook dbus)
+                <+> handleWallpaper wallpaperDirectory' timeMVar
             , startupHook = do
                 spawnOn "1" "konsole"
                 spawnOn "3" "firefox"
                 setWMName "LG3D"
+                ewmhDesktopsStartup
             , terminal = "konsole"
             } `additionalKeys`
                 [ ((mod1Mask, xK_l), spawn "slock")
@@ -126,12 +173,5 @@ main = do
                 , ((mod1Mask, xK_Shift_L), liftIO $ switchKeyboardLayout kbl)
                 , ((mod4Mask, xK_p), spawn "rofi -no-lazy-grab -show drun -modi drun")
                 , ((mod4Mask .|. shiftMask, xK_p), spawn $ userHome' <> "/install/powermenu.sh")
+                , ((mod4Mask, xK_b), sendMessage ToggleStruts)
                 ]
-    xmonad cfg
-  where
-    xmobarPP' = xmobarPP
-        { ppTitle = xmobarColor "green" "" . shorten 50
-        , ppUrgent = xmobarColor "red" ""
-        }
-    xmobarCmd = "xmobar ~/xmonadrc/xmobarrc.hs"
-    hidStatusBarShortcut XConfig {XMonad.modMask = modMask} = (modMask, xK_b)

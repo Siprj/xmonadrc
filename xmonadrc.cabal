@@ -62,14 +62,16 @@ executable xmonad
   -- Other library packages from which modules are imported.
   build-depends:
       base >=4.7 && <5.0
+    , containers
+    , dbus
+    , mtl
     , process
+    , time
     , unix
+    , X11
     , xmonad
     , xmonad-contrib
-    , containers
-    , X11
-    , time
-    , mtl
+    , utf8-string
 
   -- Directories containing source files.
   --hs-source-dirs:      src
