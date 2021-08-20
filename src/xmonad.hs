@@ -145,11 +145,11 @@ main = do
             , logHook = dynamicLogWithPP (polybarHook dbus)
                 <+> handleWallpaper wallpaperDirectory' timeMVar
             , startupHook = do
-                spawnOn "1" "konsole"
+                spawnOn "1" "alacritty"
                 spawnOn "3" "firefox"
                 setWMName "LG3D"
                 ewmhDesktopsStartup
-            , terminal = "konsole"
+            , terminal = "alacritty"
             } `additionalKeys`
                 [ ((mod1Mask, xK_l), spawn "slock")
                 , ((0, xK_Print), spawn $ "scrot " <> userHome'
