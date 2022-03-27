@@ -31,6 +31,7 @@ import XMonad.Hooks.ManageDocks
 import XMonad.Hooks.ManageHelpers
 import XMonad.Hooks.UrgencyHook
 import XMonad.Hooks.SetWMName
+import qualified XMonad.StackSet as W
 import Graphics.X11.ExtraTypes.XF86
     ( xF86XK_AudioRaiseVolume
     , xF86XK_AudioLowerVolume
@@ -150,7 +151,7 @@ main = do
                 setWMName "LG3D"
                 ewmhDesktopsStartup
             , terminal = "alacritty"
-            } `additionalKeys`
+            } `additionalKeys` (
                 [ ((mod1Mask, xK_l), spawn "slock")
                 , ((0, xK_Print), spawn $ "scrot " <> userHome'
                     <> "/ScreenShots/screen_%Y-%m-%d-%H-%M-%S.png -d 1 -u"
@@ -174,4 +175,10 @@ main = do
                 , ((mod4Mask, xK_p), spawn "rofi -no-lazy-grab -show drun -modi drun")
                 , ((mod4Mask .|. shiftMask, xK_p), spawn $ userHome' <> "/install/powermenu.sh")
                 , ((mod4Mask, xK_b), sendMessage ToggleStruts)
+                , ((mod4Mask, xK_q), spawn "xmonad --restart")
                 ]
+                <>
+                [((m .|. mod4Mask, key), screenWorkspace sc >>= flip whenJust (windows . f))
+                  | (key, sc) <- zip [xK_e, xK_w, xK_r] [0..],
+                    (f, m) <- [(W.view, 0), (W.shift, shiftMask)]]
+            )
